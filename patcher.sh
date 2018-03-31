@@ -9,7 +9,7 @@ shopt -s nullglob
 
 SELF="$(readlink -f "${BASH_SOURCE[0]}")"
 PATCH_ROOT="${SELF%/*}/patches"
-SOURCE_ROOT="${SELF%/*}/.."
+SOURCE_ROOT="${SELF%/*}/../.."
 
 while read -r PATCH_DIR; do
 	[[ -n $PATCH_DIR && -d $PATCH_DIR/.git ]] || continue

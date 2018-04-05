@@ -1,0 +1,18 @@
+diff --git a/core/dex_preopt.mk b/core/dex_preopt.mk
+index 69ab37a99..41a1c8116 100644
+--- a/core/dex_preopt.mk
++++ b/core/dex_preopt.mk
+@@ -30,11 +30,9 @@ install-on-system-other = $(filter-out $(PRODUCT_DEXPREOPT_SPEED_APPS) $(PRODUCT
+ # Conditional to building on linux, as dex2oat currently does not work on darwin.
+ ifeq ($(HOST_OS),linux)
+   WITH_DEXPREOPT ?= true
+-# For an eng build only pre-opt the boot image and system server. This gives reasonable performance
++# Only pre-opt the boot image and system server. This gives reasonable performance
+ # and still allows a simple workflow: building in frameworks/base and syncing.
+-  ifneq (user,$(TARGET_BUILD_VARIANT))
+-    WITH_DEXPREOPT_BOOT_IMG_AND_SYSTEM_SERVER_ONLY ?= true
+-  endif
++  WITH_DEXPREOPT_BOOT_IMG_AND_SYSTEM_SERVER_ONLY ?= true
+ # Add mini-debug-info to the boot classpath unless explicitly asked not to.
+   ifneq (false,$(WITH_DEXPREOPT_DEBUG_INFO))
+     PRODUCT_DEX_PREOPT_BOOT_FLAGS += --generate-mini-debug-info

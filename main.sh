@@ -1,31 +1,25 @@
 #!/bin/bash
 #
-SCRIPT_VERSION="5.0"
-# sync
-# build
+# Just a simple effortlessly way to sync and build my custom
+# LineageOS 15.1 variant.
+#
 
-#red='\033[01;31m'
-#green='\033[01;32m'
-#yellow='\033[01;33m'
-#blue='\033[01;34m'
-#blink_red='\033[05;31m'
-#blink_green='\033[05;32m'
-#blink_yellow='\033[05;33m'
-#blink_blue='\033[05;34m'
-#restore='\033[0m'
+mode[0]="$1"
+mode[1]="$2"
+mode[2]="$3"
+if [ -z "$mode" ]; then
+  echo "This script needs at least one of the two possible inputs:"
+  echo "sync - to pull the latest source into your local machine;"
+  echo "build - to build the the final signed zip file."
+  echo "clean - to clean up the output directory."
+  echo "Or even all of them combined to do both things at once."
+  exit
+fi;
 
 clear
 
-#TARGET=${1};
-#devrr[0]="zl1" # Le Pro3
-#devrr[1]="x2"  # Le Max2
-#devrand=$[$RANDOM % ${#devrr[@]}]
-#if [ -z "$TARGET" ]; then
-	#echo -e ${yellow}"No target argument was passed, randomly picking one..."${restore}
-	#TARGET="${devrr[$devrand]}"
-	#echo -e ${green}"Lucky boy! Your target is the $TARGET..."${restore}
-	#echo ""
-#fi;
+target[0]="zl1" # Le Pro3
+target[1]="x2"  # Le Max2
 
 MAIN_FOLDER=`pwd`
 PATCHER_FOLDER="$MAIN_FOLDER/vendor/patcher"
@@ -34,7 +28,7 @@ WEB_MANIFEST="https://gist.githubusercontent.com/GalaticStryder/8e5a48db297488b7
 LOCAL_MANIFEST=".repo/local_manifests/local_manifest.xml"
 
 function setup {
-  source build/envsetup.sh
+  source build/envsetup.sh &>/dev/null
   croot
 }
 
@@ -72,17 +66,42 @@ function run_patcher {
   . $PATCHER_FOLDER/patcher.sh
 }
 
+function pick_target {
+  echo "Which is the build target?"
+  select choice in "${target[@]}"; do
+    case "$choice" in
+      "") break;;
+      *) TARGET=$choice
+        break;;
+    esac
+  done
+}
+
 if [ ! -z $(pwd | grep patcher) ]; then
   echo "You cannot run this script out of the tree root!"
   cp main.sh ../../
   exit 1
 fi;
 
+DATE_START=$(date +"%s")
+
 setup
-# sync
-echo "Tip: Commit all your local changes before syncing..."
-run_unpatcher
-repo_sync
-get_repopick
-get_bromite
-run_patcher
+if [[ "${mode[@]}" =~ "sync" ]]; then
+  echo "Tip: Commit all your local changes before syncing..."
+  run_unpatcher
+  repo_sync
+  get_repopick
+  get_bromite
+  run_patcher
+fi;
+if [[ "${mode[@]}" =~ "clean" ]]; then
+  mka clean
+fi;
+if [[ "${mode[@]}" =~ "build" ]]; then
+  pick_target
+  brunch $TARGET user
+fi;
+
+DATE_END=$(date +"%s")
+DIFF=$(($DATE_END - $DATE_START))
+echo "Completed in $(($DIFF / 60)) minute(s) and $(($DIFF % 60)) seconds."

@@ -1,18 +1,29 @@
 #!/bin/bash
 #
-# Just a simple effortlessly way to sync and build my custom
-# LineageOS 15.1 variant.
+# Just a simple effortlessly way to sync, clean and build my custom
+# LineageOS 15.1 or TWRP recovery variant.
+# TODO: Add updater URI generator and signing mechanisms.
 #
 
-mode[0]="$1"
-mode[1]="$2"
-mode[2]="$3"
+function usage {
+  echo "Usage:"
+  echo ""
+  echo "This script receives three kinds of MODE inputs:"
+  echo "sync  (s) - to pull the latest source into your local machine;"
+  echo "clean (c) - to clean up the output directory;"
+  echo "build (b) - to build boot/recovery image or OTA package."
+  echo "The last one - BUILD - is more flexible, you can add all your wishes there:"
+  echo "     boot - to generate the Kernel boot.img;"
+  echo "     recovery - to generate the TWRP recovery.img;"
+  echo "     bacon - to generate the final OTA package zip file."
+  echo ""
+  echo "Example: ./main.sh sync clean build bacon."
+  echo "This will be what you'll running most of the time..."
+}
+
+mode=("$@")
 if [ -z "$mode" ]; then
-  echo "This script needs at least one of the two possible inputs:"
-  echo "sync - to pull the latest source into your local machine;"
-  echo "build - to build the the final signed zip file."
-  echo "clean - to clean up the output directory."
-  echo "Or even all of them combined to do both things at once."
+  usage
   exit
 fi;
 
@@ -41,7 +52,7 @@ function repo_sync {
     rm -f $LOCAL_MANIFEST
   fi;
   curl -s -L $WEB_MANIFEST -o $LOCAL_MANIFEST
-  repo sync -f $THREAD
+  repo sync $THREAD
 }
 
 function get_repopick {
@@ -86,20 +97,36 @@ fi;
 DATE_START=$(date +"%s")
 
 setup
-if [[ "${mode[@]}" =~ "sync" ]]; then
-  echo "Tip: Commit all your local changes before syncing..."
+if [[ "${mode[@]}" =~ "sync" ]] || [[ "${mode[@]}" =~ "s" ]]; then
+  shift
   run_unpatcher
   repo_sync
   get_repopick
   get_bromite
   run_patcher
 fi;
-if [[ "${mode[@]}" =~ "clean" ]]; then
+if [[ "${mode[@]}" =~ "clean" ]] || [[ "${mode[@]}" =~ "c" ]]; then
+  shift
   mka clean
 fi;
-if [[ "${mode[@]}" =~ "build" ]]; then
+if [[ "${mode[@]}" =~ "build" ]] || [[ "${mode[@]}" =~ "b" ]]; then
+  shift
   pick_target
-  brunch $TARGET user
+  if [[ "$@" =~ "boot" ]]; then
+    echo "Building Kernel boot image..."
+    breakfast $TARGET user
+    mka bootimage
+  fi
+  if [[ "$@" =~ "recovery" ]]; then
+    echo "Building TWRP recovery image..."
+    WITH_TWRP=true breakfast $TARGET userdebug
+    mka recoveryimage
+  fi
+  if [[ "$@" =~ "bacon" ]]; then
+    echo "Building OTA package zip file..."
+    breakfast $TARGET user
+    mka bacon
+  fi
 fi;
 
 DATE_END=$(date +"%s")

@@ -1,3 +1,18 @@
+From 4ae17f8320b5dfae9594f5346a268931ca293967 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=C3=8Dcaro=20Hoff?= <icarohoff@gmail.com>
+Date: Thu, 12 Apr 2018 16:51:28 -0300
+Subject: [PATCH] Unconditionally set DEX_PREOPT of boot and system
+ server
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Change-Id: I00f7571936cd84d3902dadafde92055896028a43
+Signed-off-by: Ícaro Hoff <icarohoff@gmail.com>
+---
+ core/dex_preopt.mk | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
 diff --git a/core/dex_preopt.mk b/core/dex_preopt.mk
 index 69ab37a99..41a1c8116 100644
 --- a/core/dex_preopt.mk
@@ -16,3 +31,6 @@ index 69ab37a99..41a1c8116 100644
  # Add mini-debug-info to the boot classpath unless explicitly asked not to.
    ifneq (false,$(WITH_DEXPREOPT_DEBUG_INFO))
      PRODUCT_DEX_PREOPT_BOOT_FLAGS += --generate-mini-debug-info
+-- 
+2.15.1
+

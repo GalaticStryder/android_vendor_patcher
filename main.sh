@@ -9,9 +9,9 @@ function usage {
   echo "Usage:"
   echo ""
   echo "This script receives three kinds of MODE inputs:"
-  echo "sync  (s) - to pull the latest source into your local machine;"
-  echo "clean (c) - to clean up the output directory;"
-  echo "build (b) - to build boot/recovery image or OTA package."
+  echo "sync  - to pull the latest source into your local machine;"
+  echo "clean - to clean up the output directory;"
+  echo "build - to build boot/recovery image or OTA package."
   echo "The last one - BUILD - is more flexible, you can add all your wishes there:"
   echo "     boot - to generate the Kernel boot.img;"
   echo "     recovery - to generate the TWRP recovery.img;"
@@ -97,7 +97,7 @@ fi;
 DATE_START=$(date +"%s")
 
 setup
-if [[ "${mode[@]}" =~ "sync" ]] || [[ "${mode[@]}" =~ "s" ]]; then
+if [[ "${mode[@]}" =~ "sync" ]]; then
   shift
   run_unpatcher
   repo_sync
@@ -105,11 +105,11 @@ if [[ "${mode[@]}" =~ "sync" ]] || [[ "${mode[@]}" =~ "s" ]]; then
   get_bromite
   run_patcher
 fi;
-if [[ "${mode[@]}" =~ "clean" ]] || [[ "${mode[@]}" =~ "c" ]]; then
+if [[ "${mode[@]}" =~ "clean" ]]; then
   shift
   mka clean
 fi;
-if [[ "${mode[@]}" =~ "build" ]] || [[ "${mode[@]}" =~ "b" ]]; then
+if [[ "${mode[@]}" =~ "build" ]]; then
   shift
   pick_target
   if [[ "$@" =~ "boot" ]]; then
@@ -120,7 +120,7 @@ if [[ "${mode[@]}" =~ "build" ]] || [[ "${mode[@]}" =~ "b" ]]; then
   if [[ "$@" =~ "recovery" ]]; then
     echo "Building TWRP recovery image..."
     WITH_TWRP=true breakfast $TARGET userdebug
-    mka recoveryimage
+    WITH_TWRP=true mka recoveryimage
   fi
   if [[ "$@" =~ "bacon" ]]; then
     echo "Building OTA package zip file..."

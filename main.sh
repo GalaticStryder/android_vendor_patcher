@@ -36,6 +36,7 @@ MAIN_FOLDER=`pwd`
 PATCHER_FOLDER="$MAIN_FOLDER/vendor/patcher"
 THREAD="-j$(grep -c ^processor /proc/cpuinfo)"
 WEB_MANIFEST="https://gist.githubusercontent.com/GalaticStryder/8e5a48db297488b7d4086a88daf71f28/raw/local_manifest.xml"
+WEB_REPOPICK="https://gist.githubusercontent.com/GalaticStryder/aded34e7a3f8abfa48c9471e3ff6d3df/raw/repopick.txt"
 LOCAL_MANIFEST=".repo/local_manifests/local_manifest.xml"
 
 function setup {
@@ -56,11 +57,10 @@ function repo_sync {
 }
 
 function get_repopick {
-  if [ -f $PATCHER_FOLDER/repopick.txt ]; then
-    for i in $(cat $PATCHER_FOLDER/repopick.txt | grep -v "#"); do
-      repopick $i -q
-    done
-  fi
+  curl -s -L $WEB_REPOPICK -o $PATCHER_FOLDER/repopick.txt
+  for i in $(cat $PATCHER_FOLDER/repopick.txt | grep -v "#"); do
+    repopick $i -q
+  done
 }
 
 function get_bromite {

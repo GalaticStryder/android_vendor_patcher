@@ -120,7 +120,7 @@ if [[ "${mode[@]}" =~ "build" ]]; then
   if [[ "$@" =~ "recovery" ]]; then
     echo "Building TWRP recovery image..."
     WITH_TWRP=true breakfast $TARGET userdebug
-    WITH_TWRP=true mka recoveryimage
+    WITH_TWRP=true mka adbd recoveryimage
   fi
   if [[ "$@" =~ "bacon" ]]; then
     echo "Building OTA package zip file..."

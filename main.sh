@@ -2,7 +2,8 @@
 #
 # Just a simple effortlessly way to sync, clean and build my custom
 # LineageOS 15.1 or TWRP recovery variant.
-# TODO: Add updater URI generator and signing mechanisms.
+# TODO: Add signing mechanisms and key generation.
+# TODO: Add save-for-later mechanism if out-of-time.
 #
 
 function usage {
@@ -21,6 +22,14 @@ function usage {
   echo "This will be what you'll running most of the time..."
 }
 
+if [ ! -z $(pwd | grep patcher) ]; then
+  echo "You cannot run this script out of the root tree!"
+  cp main.sh ../../
+  echo "Copied main.sh to your root tree, now go there and run it."
+  echo "cd ../../"
+  exit 1
+fi;
+
 mode=("$@")
 if [ -z "$mode" ]; then
   usage
@@ -29,15 +38,36 @@ fi;
 
 clear
 
+# Targets
 target[0]="zl1" # Le Pro3
 target[1]="x2"  # Le Max2
 
+# Heroku deployment
+HEROKU="https://json-lineage.herokuapp.com"
+WEB_MANIFEST="$HEROKU/local_manifest.xml"
+WEB_REPOPICK="$HEROKU/repopick.txt"
+
+# AOSP tree paths
 MAIN_FOLDER=`pwd`
 PATCHER_FOLDER="$MAIN_FOLDER/vendor/patcher"
-THREAD="-j$(grep -c ^processor /proc/cpuinfo)"
-WEB_MANIFEST="https://gist.githubusercontent.com/GalaticStryder/8e5a48db297488b7d4086a88daf71f28/raw/local_manifest.xml"
-WEB_REPOPICK="https://gist.githubusercontent.com/GalaticStryder/aded34e7a3f8abfa48c9471e3ff6d3df/raw/repopick.txt"
 LOCAL_MANIFEST=".repo/local_manifests/local_manifest.xml"
+
+# Number of threads for repo sync
+THREAD="-j$(grep -c ^processor /proc/cpuinfo)"
+
+# LineageOS versioning
+BRAND="lineage"
+VERSION="15.1"
+DATE=$(date -u +%m%d%Y)
+TYPE="UNOFFICIAL"
+
+# Github releases
+REPOSITORY="lineage_releases"
+TAG="dev"
+# Add to ~/.bashrc and modify if you're not SuperSexy.
+#export GITHUB_USERNAME="SuperSexy"
+#export GITHUB_USERTOKEN="xoxoxoxoxoxoxoxoxoxoxoxoxoxoxoxoxoxoxoxo"
+# Generate your own token with `repo` at: https://github.com/settings/tokens
 
 function setup {
   source build/envsetup.sh &>/dev/null
@@ -77,6 +107,18 @@ function run_patcher {
   . $PATCHER_FOLDER/patcher.sh
 }
 
+function target_variables {
+  echo "Setting target ($TARGET) variables..."
+  # Output folder
+  PRODUCT_FOLDER="$MAIN_FOLDER/out/target/product/$TARGET"
+  # Recovery file/path
+  RECOVERY_NAME="recovery-${DATE}-${TARGET}"
+  RECOVERY_PATH="$PRODUCT_FOLDER/$RECOVERY_NAME.img"
+  # Bacon file/path
+  BACON_FILE="${BRAND}-${VERSION}-${DATE}-${TYPE}-${TARGET}.zip"
+  BACON_PATH="${PRODUCT_FOLDER}/${BACON_FILE}"
+}
+
 function pick_target {
   echo "Which is the build target?"
   select choice in "${target[@]}"; do
@@ -86,13 +128,64 @@ function pick_target {
         break;;
     esac
   done
+  target_variables
 }
 
-if [ ! -z $(pwd | grep patcher) ]; then
-  echo "You cannot run this script out of the tree root!"
-  cp main.sh ../../
-  exit 1
-fi;
+# ask_release $file $tag
+function ask_release {
+  # Push to a different `tag` if explicitly wanted,
+  # otherwise use the default tag.
+  if [ ! -z $2 ]; then
+    GIT_TAG=$2
+  else
+    GIT_TAG=$TAG
+  fi;
+  RELEASE=$(basename $1)
+  while read -p "Push $RELEASE to Github $REPOSITORY/$GIT_TAG (Y/n)? " achoice
+  do
+  case "$achoice" in
+    y|Y)
+      echo "Pushing $RELEASE to Github $REPOSITORY/$GIT_TAG..."
+      . $PATCHER_FOLDER/lineage-release.sh github_api_token=$GITHUB_USERTOKEN owner=$GITHUB_USERNAME repo=$REPOSITORY tag=$GIT_TAG filename=$1
+      echo ""
+      echo "...Done!"
+      break
+      ;;
+    n|N)
+      echo "Skipping $RELEASE publishment... Can you do it later?"
+      break
+      ;;
+  esac
+  done
+}
+
+function write_json {
+  cat << EOF >> $TARGET.json
+{"response":[{"datetime":"$(date -u +%s)","filename":"$BACON_FILE","id":"$(sha1sum $BACON_PATH | awk '{ print $1 }')","romtype": "unofficial","size":"$(du -sb $BACON_PATH | awk '{ print $1 }')","url":"https://github.com/$GITHUB_USERNAME/$REPOSITORY/releases/download/$TAG/$BACON_FILE","version":"$VERSION"}]}
+EOF
+}
+
+function ask_heroku {
+  while read -p "Publish OTA update notification to $HEROKU (Y/n)? " achoice
+  do
+  case "$achoice" in
+    y|Y)
+      echo "Generating $TARGET.json skeleton..."
+      write_json
+      echo "...Done!"
+      echo "Publishing $BACON_FILE to $HEROKU/$TARGET..."
+      curl -X POST -H "Content-Type: application/json" -d @${TARGET}.json $HEROKU/$TARGET
+      rm $TARGET.json
+      echo ""
+      break
+      ;;
+    n|N)
+      echo "Skipping OTA notification publishment..."
+      break
+      ;;
+  esac
+  done
+}
 
 DATE_START=$(date +"%s")
 
@@ -121,11 +214,31 @@ if [[ "${mode[@]}" =~ "build" ]]; then
     echo "Building TWRP recovery image..."
     WITH_TWRP=true breakfast $TARGET userdebug
     WITH_TWRP=true mka adbd recoveryimage
+    if [ -f $PRODUCT_FOLDER/recovery.img ]; then
+      echo "Renaming recovery.img to $RECOVERY_NAME.img..."
+      cp $PRODUCT_FOLDER/recovery.img $RECOVERY_PATH
+      ask_release $RECOVERY_PATH recovery
+      recovery_job="succeeded"
+    else
+      echo "Something went wrong, $PRODUCT_FOLDER/recovery.img does not exist!"
+      recovery_job="failed"
+    fi
+    echo "The compilation of TWRP recovery image has $recovery_job!"
   fi
   if [[ "$@" =~ "bacon" ]]; then
     echo "Building OTA package zip file..."
     breakfast $TARGET user
     mka bacon
+    if [ -f $BACON_PATH ]; then
+      sleep 10
+      ask_release $BACON_PATH
+      ask_heroku
+      bacon_job="succeeded"
+    else
+      echo "Something went wrong, $BACON_FILE does not exist!"
+      bacon_job="failed"
+    fi;
+    echo "The compilation of OTA package zip file has $bacon_job!"
   fi
 fi;
 

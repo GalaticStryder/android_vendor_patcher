@@ -43,6 +43,7 @@ target[0]="zl1" # Le Pro3
 target[1]="x2"  # Le Max2
 
 # Heroku deployment
+# HEROKU_OAUTH="ASK_ME_FOR_IT"
 HEROKU="https://json-lineage.herokuapp.com"
 WEB_MANIFEST="$HEROKU/local_manifest.xml"
 WEB_REPOPICK="$HEROKU/repopick.txt"
@@ -174,7 +175,7 @@ function ask_heroku {
       write_json
       echo "...Done!"
       echo "Publishing $BACON_FILE to $HEROKU/$TARGET..."
-      curl -X POST -H "Content-Type: application/json" -d @${TARGET}.json $HEROKU/$TARGET
+      curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $HEROKU_OAUTH" -d @${TARGET}.json $HEROKU/$TARGET
       rm $TARGET.json
       echo ""
       break

@@ -42,6 +42,11 @@ clear
 target[0]="zl1" # Le Pro3
 target[1]="x2"  # Le Max2
 
+# Types
+type[0]="user"
+type[1]="userdebug"
+type[2]="eng"
+
 # Heroku deployment
 # HEROKU_OAUTH="ASK_ME_FOR_IT"
 HEROKU="https://json-lineage.herokuapp.com"
@@ -59,7 +64,7 @@ THREAD="-j$(grep -c ^processor /proc/cpuinfo)"
 # LineageOS versioning
 BRAND="lineage"
 VERSION="15.1"
-DATE=$(date -u +%m%d%Y)
+DATE=$(date -u +%Y%m%d)
 TYPE="UNOFFICIAL"
 
 # Github releases
@@ -109,6 +114,7 @@ function run_patcher {
 }
 
 function target_variables {
+  echo ""
   echo "Setting target ($TARGET) variables..."
   # Output folder
   PRODUCT_FOLDER="$MAIN_FOLDER/out/target/product/$TARGET"
@@ -118,8 +124,10 @@ function target_variables {
   # Bacon file/path
   BACON_FILE="${BRAND}-${VERSION}-${DATE}-${TYPE}-${TARGET}.zip"
   BACON_PATH="${PRODUCT_FOLDER}/${BACON_FILE}"
+  echo ""
 }
 
+# curl -s https://raw.githubusercontent.com/LineageOS/hudson/master/lineage-build-targets | grep -v "#" | grep lineage-15.1 | awk '{ print $1 }'
 function pick_target {
   echo "Which is the build target?"
   select choice in "${target[@]}"; do
@@ -130,6 +138,17 @@ function pick_target {
     esac
   done
   target_variables
+}
+
+function pick_type {
+  echo "Which is the build type?"
+  select choice in "${type[@]}"; do
+    case "$choice" in
+      "") break;;
+      *) TYPE=$choice
+        break;;
+    esac
+  done
 }
 
 # ask_release $file $tag
@@ -206,14 +225,18 @@ fi;
 if [[ "${mode[@]}" =~ "build" ]]; then
   shift
   pick_target
+  pick_type
   if [[ "$@" =~ "boot" ]]; then
     echo "Building Kernel boot image..."
-    breakfast $TARGET user
+    breakfast $TARGET $TYPE
     mka bootimage
   fi
   if [[ "$@" =~ "recovery" ]]; then
+    # Currently not "native" with LineageOS 15.1 tree.
+    echo "WARNING: Compiling TWRP on LineageOS 15.1 tree is not recommended."
     echo "Building TWRP recovery image..."
-    WITH_TWRP=true breakfast $TARGET userdebug
+    TYPE="eng" # Force `eng` build for TWRP.
+    WITH_TWRP=true breakfast $TARGET $TYPE
     WITH_TWRP=true mka adbd recoveryimage
     if [ -f $PRODUCT_FOLDER/recovery.img ]; then
       echo "Renaming recovery.img to $RECOVERY_NAME.img..."
@@ -228,7 +251,7 @@ if [[ "${mode[@]}" =~ "build" ]]; then
   fi
   if [[ "$@" =~ "bacon" ]]; then
     echo "Building OTA package zip file..."
-    breakfast $TARGET user
+    breakfast $TARGET $TYPE
     mka bacon
     if [ -f $BACON_PATH ]; then
       sleep 10

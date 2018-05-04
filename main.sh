@@ -49,9 +49,9 @@ type[2]="eng"
 
 # Heroku deployment
 # HEROKU_OAUTH="ASK_ME_FOR_IT"
-HEROKU="https://json-lineage.herokuapp.com"
-WEB_MANIFEST="$HEROKU/local_manifest.xml"
-WEB_REPOPICK="$HEROKU/repopick.txt"
+HEROKU="https://json-lineage-v2.herokuapp.com"
+WEB_MANIFEST="$HEROKU/res/local_manifest.xml"
+WEB_REPOPICK="$HEROKU/res/repopick.txt"
 
 # AOSP tree paths
 MAIN_FOLDER=`pwd`
@@ -185,6 +185,7 @@ function write_json {
 EOF
 }
 
+# Needs refactoring for V2 server.
 function ask_heroku {
   while read -p "Publish OTA update notification to $HEROKU (Y/n)? " achoice
   do
@@ -256,13 +257,15 @@ if [[ "${mode[@]}" =~ "build" ]]; then
     if [ -f $BACON_PATH ]; then
       sleep 10
       ask_release $BACON_PATH
-      ask_heroku
+      #ask_heroku
       bacon_job="succeeded"
     else
       echo "Something went wrong, $BACON_FILE does not exist!"
       bacon_job="failed"
     fi;
     echo "The compilation of OTA package zip file has $bacon_job!"
+    # Manually push it via web app interface until V1 compatibility for posting is ready.
+    echo "You can publish the update notification via $HEROKU."
   fi
 fi;
 

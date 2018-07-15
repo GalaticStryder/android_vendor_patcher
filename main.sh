@@ -13,13 +13,12 @@ function usage {
   echo "sync  - to pull the latest source into your local machine;"
   echo "clean - to clean up the output directory;"
   echo "build - to build boot/recovery image or OTA package."
-  echo "The last one - BUILD - is more flexible, you can add all your wishes there:"
   echo "     boot - to generate the Kernel boot.img;"
   echo "     recovery - to generate the TWRP recovery.img;"
   echo "     bacon - to generate the final OTA package zip file."
+  echo "     upload - to upload the final package to Github hosting repository."
   echo ""
-  echo "Example: ./main.sh sync clean build bacon."
-  echo "This will be what you'll running most of the time..."
+  echo "The default script routine is [ build bacon ]."
 }
 
 if [ ! -z $(pwd | grep patcher) ]; then
@@ -30,13 +29,25 @@ if [ ! -z $(pwd | grep patcher) ]; then
   exit 1
 fi;
 
+clear
 mode=("$@")
 if [ -z "$mode" ]; then
   usage
-  exit
+  while read -p "Run the default routine? " choice
+  do
+  case "$choice" in
+    y|Y)
+      mode=("build bacon")
+      echo "Running the default [ $mode ] routine..."
+      break
+      ;;
+    n|N)
+      exit
+      break
+      ;;
+  esac
+  done
 fi;
-
-clear
 
 # Targets
 target[0]="zl1" # Le Pro3
@@ -149,6 +160,7 @@ function pick_type {
         break;;
     esac
   done
+  echo ""
 }
 
 # ask_release $file $tag
@@ -185,7 +197,7 @@ function write_json {
 EOF
 }
 
-# Needs refactoring for V2 server.
+# WARNING: Needs refactoring for V2 server!
 function ask_heroku {
   while read -p "Publish OTA update notification to $HEROKU (Y/n)? " achoice
   do
@@ -196,7 +208,7 @@ function ask_heroku {
       echo "...Done!"
       echo "Publishing $BACON_FILE to $HEROKU/$TARGET..."
       curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $HEROKU_OAUTH" -d @${TARGET}.json $HEROKU/$TARGET
-      rm $TARGET.json
+      mv $TARGET.json last_$TARGET.json
       echo ""
       break
       ;;
@@ -240,10 +252,13 @@ if [[ "${mode[@]}" =~ "build" ]]; then
     WITH_TWRP=true breakfast $TARGET $TYPE
     WITH_TWRP=true mka adbd recoveryimage
     if [ -f $PRODUCT_FOLDER/recovery.img ]; then
-      echo "Renaming recovery.img to $RECOVERY_NAME.img..."
+      echo "Copying target recovery.img to $RECOVERY_NAME.img..."
       cp $PRODUCT_FOLDER/recovery.img $RECOVERY_PATH
-      ask_release $RECOVERY_PATH recovery
       recovery_job="succeeded"
+      if [[ "$@" =~ "upload" ]]; then
+        # Upload build to Github hosting repository, 'recovery' tag.
+        ask_release $RECOVERY_PATH recovery
+      fi
     else
       echo "Something went wrong, $PRODUCT_FOLDER/recovery.img does not exist!"
       recovery_job="failed"
@@ -256,9 +271,11 @@ if [[ "${mode[@]}" =~ "build" ]]; then
     mka bacon
     if [ -f $BACON_PATH ]; then
       sleep 10
-      ask_release $BACON_PATH
-      #ask_heroku
       bacon_job="succeeded"
+      if [[ "$@" =~ "upload" ]]; then
+        # Upload the build to Github hosting repository.
+        ask_release $BACON_PATH
+      fi
     else
       echo "Something went wrong, $BACON_FILE does not exist!"
       bacon_job="failed"

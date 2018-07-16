@@ -1,21 +1,19 @@
-From dc63bc3866fe83d334bd9552190f4d692c30a56b Mon Sep 17 00:00:00 2001
+From d057bc1a5532d76f95a909758294ee0b3ef90514 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?=C3=8Dcaro=20Hoff?= <icarohoff@gmail.com>
-Date: Sun, 15 Apr 2018 14:11:23 -0300
-Subject: [PATCH] Always enable ADB secure property for non-user builds
+Date: Mon, 16 Jul 2018 14:46:08 -0300
+Subject: [PATCH 2/2] lineage: always disable ADB secure for non-user builds
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 
-Builds with eng and userdebug all should have it disabled.
-
-Change-Id: Ia0015f60757bc4853465ad140b52691448d55430
+Change-Id: I1c8ee390ef9185630c58ce553615f152e536fb47
 Signed-off-by: Ícaro Hoff <icarohoff@gmail.com>
 ---
  config/common.mk | 6 +++---
  1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/config/common.mk b/config/common.mk
-index 7ed80988..3c22c4e5 100644
+index 0c7c1462..b8368675 100644
 --- a/config/common.mk
 +++ b/config/common.mk
 @@ -26,9 +26,9 @@ ifneq ($(TARGET_BUILD_VARIANT),user)
@@ -24,13 +22,13 @@ index 7ed80988..3c22c4e5 100644
  
 -ifneq ($(TARGET_BUILD_VARIANT),eng)
 -# Enable ADB authentication
--PRODUCT_DEFAULT_PROPERTY_OVERRIDES += ro.adb.secure=1
+-PRODUCT_SYSTEM_DEFAULT_PROPERTIES += ro.adb.secure=1
 +ifneq ($(TARGET_BUILD_VARIANT),user)
 +# Disable ADB authentication
-+PRODUCT_DEFAULT_PROPERTY_OVERRIDES += ro.adb.secure=0
++PRODUCT_SYSTEM_DEFAULT_PROPERTIES += ro.adb.secure=0
  endif
  
  ifeq ($(BOARD_CACHEIMAGE_FILE_SYSTEM_TYPE),)
 -- 
-2.15.1
+2.17.1
 

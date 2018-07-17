@@ -1,0 +1,43 @@
+From 49e7ef1ebb8b5d7637630323fa282779ce7e99a7 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=C3=8Dcaro=20Hoff?= <icarohoff@gmail.com>
+Date: Tue, 17 Jul 2018 10:16:18 -0300
+Subject: [PATCH] sepolicy: update neverallow domains for user type builds
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Change-Id: If996db1268f26a964006421d17edb7e9efe7cd56
+Signed-off-by: Ícaro Hoff <icarohoff@gmail.com>
+---
+ public/domain.te | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/public/domain.te b/public/domain.te
+index 8d0b507b..03d3604b 100644
+--- a/public/domain.te
++++ b/public/domain.te
+@@ -249,7 +249,7 @@ neverallow {
+ # Limit raw I/O to these whitelisted domains. Do not apply to debug builds.
+ neverallow {
+   domain
+-  userdebug_or_eng(`-domain')
++  -domain
+   -kernel
+   -init
+   -recovery
+@@ -410,10 +410,10 @@ neverallow { domain -recovery -kernel -update_engine with_asan(`-asan_extract')
+ 
+ # Don't allow mounting on top of /system files or directories
+ neverallow * exec_type:dir_file_class_set mounton;
+-neverallow { domain -init userdebug_or_eng(`-recovery') } { system_file vendor_file_type }:dir_file_class_set mounton;
++neverallow { domain -init -recovery } { system_file vendor_file_type }:dir_file_class_set mounton;
+ 
+ # Nothing should be writing to files in the rootfs.
+-neverallow { domain userdebug_or_eng(`-recovery -update_engine') } rootfs:file { create write setattr relabelto append unlink link rename };
++neverallow { domain -recovery -update_engine } rootfs:file { create write setattr relabelto append unlink link rename };
+ neverallow { -update_engine } rootfs:file { create write setattr relabelto append unlink link rename };
+ 
+ # Restrict context mounts to specific types marked with
+-- 
+2.17.1
+

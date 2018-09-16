@@ -1,51 +1,21 @@
-From edd3d4a9d46a9f7ad3a13f648718025bae29cc53 Mon Sep 17 00:00:00 2001
+From bdfd9a767179283a975339977ebb95769a3c9d4e Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?=C3=8Dcaro=20Hoff?= <icarohoff@gmail.com>
-Date: Sun, 19 Aug 2018 13:17:49 -0300
-Subject: [PATCH 1/1] Adjust updater URL to Heroku front-end deployment app
- (v2)
+Date: Sun, 16 Sep 2018 12:15:20 -0300
+Subject: [PATCH 1/1] Updater: point to custom JSON updates provider
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 
-In the front-end web app, the update 'id' is a 6-digit random number
-instead of string as we don't have many updates to handle and it's
-cleaner to read in this case.
-
-W.I.P.
-
-Change-Id: I7f89bf7912b7ba8af50ff04e1afde6106cd630aa
+Change-Id: I30811e846cae153f5a73f44b1f6ad468d0176bad
 Signed-off-by: Ícaro Hoff <icarohoff@gmail.com>
 ---
- README.md                                     | 4 ++--
  res/values/strings.xml                        | 3 +--
  src/org/lineageos/updater/misc/Constants.java | 1 -
- src/org/lineageos/updater/misc/Utils.java     | 6 ++----
- 4 files changed, 5 insertions(+), 9 deletions(-)
+ src/org/lineageos/updater/misc/Utils.java     | 4 +---
+ 3 files changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/README.md b/README.md
-index ecb06f4..6215e70 100644
---- a/README.md
-+++ b/README.md
-@@ -14,7 +14,7 @@ a JSON with the following structure:
-     {
-       "datetime": 1230764400,
-       "filename": "ota-package.zip",
--      "id": "5eb63bbbe01eeed093cb22bb8f5acdc3",
-+      "id": 283787,
-       "romtype": "nightly",
-       "size": 314572800,
-       "url": "https://example.com/ota-package.zip",
-@@ -26,7 +26,7 @@ a JSON with the following structure:
- 
- The `datetime` attribute is the build date expressed as UNIX timestamp.  
- The `filename` attribute is the name of the file to be downloaded.  
--The `id` attribute is a string that uniquely identifies the update.  
-+The `id` attribute is a random number that uniquely identifies the update.  
- The `romtype` attribute is the string to be compared with the `ro.lineage.releasetype` property.  
- The `size` attribute is the size of the update expressed in bytes.  
- The `url` attribute is the URL of the file to be downloaded.  
 diff --git a/res/values/strings.xml b/res/values/strings.xml
-index 1d92448..da34381 100644
+index aa84059..a058a71 100644
 --- a/res/values/strings.xml
 +++ b/res/values/strings.xml
 @@ -30,9 +30,8 @@
@@ -72,18 +42,9 @@ index 5bc0e8b..8305b50 100644
      public static final String PROP_NEXT_DEVICE = "ro.updater.next_device";
      public static final String PROP_RELEASE_TYPE = "ro.lineage.releasetype";
 diff --git a/src/org/lineageos/updater/misc/Utils.java b/src/org/lineageos/updater/misc/Utils.java
-index 171c2cc..efffbc2 100644
+index 171c2cc..c213ce6 100644
 --- a/src/org/lineageos/updater/misc/Utils.java
 +++ b/src/org/lineageos/updater/misc/Utils.java
-@@ -85,7 +85,7 @@ public class Utils {
-         Update update = new Update();
-         update.setTimestamp(object.getLong("datetime"));
-         update.setName(object.getString("filename"));
--        update.setDownloadId(object.getString("id"));
-+        update.setDownloadId(object.getLong("id"));
-         update.setType(object.getString("romtype"));
-         update.setFileSize(object.getLong("size"));
-         update.setDownloadUrl(object.getString("url"));
 @@ -146,7 +146,6 @@ public class Utils {
      }
  
